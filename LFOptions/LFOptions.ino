@@ -37,7 +37,8 @@ const char REG = 'r';
 const char VAR = 'v';
 char tempo = REG;
 const int tempo_vary_length = 128;
-float tempo_vary[tempo_vary_length] = {0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.51, 0.51, 0.51, 0.51, 0.52, 0.52, 0.52, 0.53, 0.53, 0.54, 0.54, 0.55, 0.56, 0.57, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.66, 0.67, 0.68, 0.69, 0.71, 0.72, 0.74, 0.75, 0.77, 0.79, 0.80, 0.82, 0.84, 0.86, 0.87, 0.89, 0.91, 0.93, 0.95, 0.97, 0.99, 1.01, 1.03, 1.05, 1.08, 1.10, 1.12, 1.14, 1.16, 1.18, 1.21, 1.23, 1.25, 1.27, 1.29, 1.32, 1.34, 1.36, 1.38, 1.40, 1.42, 1.45, 1.47, 1.49, 1.51, 1.53, 1.55, 1.57, 1.59, 1.61, 1.63, 1.64, 1.66, 1.68, 1.70, 1.71, 1.73, 1.75, 1.76, 1.78, 1.79, 1.81, 1.82, 1.83, 1.84, 1.86, 1.87, 1.88, 1.89, 1.90, 1.91, 1.92, 1.93, 1.93, 1.94, 1.95, 1.96, 1.96, 1.97, 1.97, 1.98, 1.98, 1.98, 1.99, 1.99, 1.99, 1.99, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00}; // a table containing values for varying the tempo of changes
+const float tempo_vary[tempo_vary_length] = {0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.51, 0.51, 0.51, 0.51, 0.52, 0.52, 0.52, 0.53, 0.53, 0.54, 0.54, 0.55, 0.56, 0.57, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.66, 0.67, 0.68, 0.69, 0.71, 0.72, 0.74, 0.75, 0.77, 0.79, 0.80, 0.82, 0.84, 0.86, 0.87, 0.89, 0.91, 0.93, 0.95, 0.97, 0.99, 1.01, 1.03, 1.05, 1.08, 1.10, 1.12, 1.14, 1.16, 1.18, 1.21, 1.23, 1.25, 1.27, 1.29, 1.32, 1.34, 1.36, 1.38, 1.40, 1.42, 1.45, 1.47, 1.49, 1.51, 1.53, 1.55, 1.57, 1.59, 1.61, 1.63, 1.64, 1.66, 1.68, 1.70, 1.71, 1.73, 1.75, 1.76, 1.78, 1.79, 1.81, 1.82, 1.83, 1.84, 1.86, 1.87, 1.88, 1.89, 1.90, 1.91, 1.92, 1.93, 1.93, 1.94, 1.95, 1.96, 1.96, 1.97, 1.97, 1.98, 1.98, 1.98, 1.99, 1.99, 1.99, 1.99, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00}; // a table containing values for varying the tempo of changes
+const long pow2_table[];
 float dest_val; // The CV value we're heading toward (smoothstep's edge1)
 float curr_val; // The current CV value (smoothstep's x)
 float prev_val; // The CV at the start of this transition (smoothstep's edge0)
@@ -76,13 +77,8 @@ void setup() {
     tempo = VAR;
   }
 
-  for (int i = 0; i < tempo_vary_length; i++) {
-    tempo_vary[i] = smootherstep( 0.0, 1.0, float(i) / tempo_vary_length) * 1.5 + 0.5;
-    // Serial.print(tempo_vary[i]); Serial.print(", ");
-  }
-  //Serial.println();
+  build_pow2_table();
 }
-
 
 // Ken Perlin suggests an improved version of the smoothstep() function,
 // which has zero 1st- and 2nd-order derivatives at x = 0 and x = 1.
@@ -93,7 +89,22 @@ float smootherstep(float edge0, float edge1, float x)
   return x * x * x * (x * (x * 6. - 15.) + 10.);
 }
 
+void build_vary_table() {
+  // this table is already pre-built and included above, but here's the code if you want to make it again or differently.
+  // currently, it emphasizes values at the end of the scale (0.5 and 2.0), and fewer in the middle around 1.
+  for (int i = 0; i < tempo_vary_length; i++) {
+    tempo_vary[i] = smootherstep( 0.0, 1.0, float(i) / tempo_vary_length) * 1.5 + 0.5;
+    Serial.print(tempo_vary[i]); Serial.print(", ");
+  }
+  Serial.println();
+}
 
+void build_pow2_table() {
+  // pre-build the table of squares for exponential-izing the linear potentiometer
+  for (int i, i < 1024, i++) {
+    Serial.print(i * i); Serial.print(", ");
+  }
+}
 void loop() {
 
   // TODO:
@@ -126,14 +137,14 @@ void loop() {
         dest_val = 0;
       }
     }
+    // setting the duration here means it'll only be reset at the end of a transition, and not instantly when the tempo knob is changed.
+    duration = map(pow(analogRead(pot_tempo), 2.0), 0, 1046529, 33, 2000); // exponential knob, tempo range is 15hz to 4 sec
+    if (tempo == VAR) {
+      duration *= tempo_vary[random(128)];
+    }
     dest_time = curr_time + duration;
   }
 
-  duration = map(analogRead(pot_tempo), 0, 1023, 33, 10000);
-  if (tempo == VAR) {
-    duration *= tempo_vary[random(128)];
-  }
-  dest_time = prev_time + duration;
 
   sstep = smootherstep(prev_time, dest_time, curr_time);
   gap = dest_val - prev_val;
@@ -141,8 +152,8 @@ void loop() {
 
   analogWrite(CVout, curr_val);
 
-  //Serial.print("dest_val:"); Serial.print(dest_val); Serial.print(", ");
-  //Serial.print("curr_val:"); Serial.print(curr_val); Serial.print(", ");
+  Serial.print("dest_val:"); Serial.print(dest_val); Serial.print(", ");
+  Serial.print("curr_val:"); Serial.print(curr_val); Serial.print(", ");
   //Serial.print("duration:"); Serial.print(duration); Serial.print(", ");
-  //Serial.println();
+  Serial.println();
 }
